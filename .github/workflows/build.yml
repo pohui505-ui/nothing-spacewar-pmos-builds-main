@@ -1,0 +1,63 @@
+name: Build nightly images
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 5' # Run every friday at midnight
+
+jobs:
+  build-image:
+    strategy:
+      matrix:
+        version: ["default"]
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out build configurations
+        uses: actions/checkout@v4
+
+      - name: Configure git
+        run: |
+          git config --global user.email "veythrix@gmail.com"
+          git config --global user.name "Veythrix"
+
+      - name: Substitute placeholders in configs
+        run: |
+          find . -type f -name "*.cfg" -exec sed -i "s|HOME|$(echo $HOME)|;s|NPROC|$(nproc)|" {} +
+
+      - name: Install pmbootstrap from git
+        run: |
+          git clone https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git --depth 1
+          mkdir -p ~/.local/bin
+          ln -s "$PWD/pmbootstrap/pmbootstrap.py" ~/.local/bin/pmbootstrap
+          pmbootstrap --version
+
+      - name: Set up pmaports
+        run: |
+          echo -e '\n\n' | pmbootstrap init || true
+          cd ~/.local/var/pmbootstrap/cache_git/pmaports
+          git remote add sm7327 https://github.com/mainlining/pmaports
+          DEFAULT_BRANCH=danila/spacewar
+          git fetch sm7327 $DEFAULT_BRANCH
+          git reset --hard sm7327/$DEFAULT_BRANCH
+
+      - name: Choose nothing-spacewar device in pmbootstrap to build kernel
+        run: |
+          cp nothing-spacewar.cfg ~/.config/pmbootstrap_v3.cfg
+
+      - name: Build nothing-spacewar
+        run: |
+          cp nothin.cfg ~/.config/pmbootstrap.cfg
+          pmbootstrap install --password 9229
+          pmbootstrap export
+          cp /tmp/postmarketOS-export/boot.img out/boot-nothing-spacewar.img
+          cp /tmp/postmarketOS-export/nothing-spacewar.img out/rootfs-nothing-spacewar.img
+          xz -T0 -9e -v out/rootfs-nothing-spacewar.img
+          echo -e "n\nn\ny\n" | pmbootstrap zap
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nothing-spacewar
+          path: out/*-spacewar.img*
+          retention-days: 7
