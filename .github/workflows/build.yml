@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: '0 0 * * 5' # Run every friday at midnight
 
+env:
+  KERNEL_BRANCH: danila/spacewar-testing
+
 jobs:
   build-image:
     strategy:
@@ -36,14 +39,38 @@ jobs:
         run: |
           echo -e '\n\n' | pmbootstrap init || true
           cd ~/.local/var/pmbootstrap/cache_git/pmaports
-          git remote add sm7327 https://github.com/mainlining/pmaports
+          git remote add sm7325 https://github.com/mainlining/pmaports.git
           DEFAULT_BRANCH=danila/spacewar
-          git fetch sm7327 $DEFAULT_BRANCH
-          git reset --hard sm7327/$DEFAULT_BRANCH
+          git fetch sm7325 $DEFAULT_BRANCH
+          git reset --hard sm7325/$DEFAULT_BRANCH
+
+      - name: Check kernel branch
+        if: matrix.version == 'default'
+        run: |
+          DEFAULT_BRANCH=danila/spacewar-testing
+          echo "Default branch is $DEFAULT_BRANCH"
+          echo "KERNEL_BRANCH=$DEFAULT_BRANCH" >> $GITHUB_ENV
+
+      - name: Clone kernel sources
+        run: |
+          git clone https://github.com/mainlining/linux.git --single-branch --branch ${{ env.KERNEL_BRANCH }} --depth 1
 
       - name: Choose nothing-spacewar device in pmbootstrap to build kernel
         run: |
           cp nothing-spacewar.cfg ~/.config/pmbootstrap_v3.cfg
+
+      - name: Compile kernel with envkernel
+        run: |
+          cd linux
+          shopt -s expand_aliases
+          source ../pmbootstrap/helpers/envkernel.sh
+          make defconfig sm7325.config
+          make -j$(nproc)
+          pmbootstrap build --envkernel linux-postmarketos-qcom-sm7325
+
+      - name: Create artifact directory
+        run: |
+          mkdir out
 
       - name: Build nothing-spacewar
         run: |
@@ -58,6 +85,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: nothing-spacewar
+          name: nothing-spacewar-${{ env.KERNEL_BRANCH }}
           path: out/*-spacewar.img*
           retention-days: 7
