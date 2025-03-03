@@ -39,10 +39,10 @@ jobs:
         run: |
           echo -e '\n\n' | pmbootstrap init || true
           cd ~/.local/var/pmbootstrap/cache_git/pmaports
-          git remote add sm7325 https://github.com/mainlining/pmaports.git
+          git remote add sc7280 https://github.com/mainlining/pmaports.git
           DEFAULT_BRANCH=danila/spacewar
-          git fetch sm7325 $DEFAULT_BRANCH
-          git reset --hard sm7325/$DEFAULT_BRANCH
+          git fetch sc7280 $DEFAULT_BRANCH
+          git reset --hard sc7280/$DEFAULT_BRANCH
 
       - name: Check kernel branch
         if: matrix.version == 'default'
