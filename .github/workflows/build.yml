@@ -64,9 +64,9 @@ jobs:
           cd linux
           shopt -s expand_aliases
           source ../pmbootstrap/helpers/envkernel.sh
-          make defconfig sm7325.config
+          make defconfig sc7280.config
           make -j$(nproc)
-          pmbootstrap build --envkernel linux-postmarketos-qcom-sm7325
+          pmbootstrap build --envkernel linux-postmarketos-qcom-sc7280
 
       - name: Create artifact directory
         run: |
