@@ -47,7 +47,7 @@ jobs:
       - name: Check kernel branch
         if: matrix.version == 'default'
         run: |
-          DEFAULT_BRANCH=danila/spacewar-testing
+          DEFAULT_BRANCH=danila/spacewar
           echo "Default branch is $DEFAULT_BRANCH"
           echo "KERNEL_BRANCH=$DEFAULT_BRANCH" >> $GITHUB_ENV
 
